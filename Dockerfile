@@ -14,4 +14,8 @@ RUN apt update && apt install -y glibc-source
 
 WORKDIR /root/
 
+COPY .env .
+
 COPY --from=builder /usr/src/myapp/target/release/SysMetricMiner .
+
+CMD ["./SysMetricMiner"]

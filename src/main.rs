@@ -4,6 +4,9 @@ use serde_json::to_string;
 use lapin::{Connection, ConnectionProperties, options::*, types::FieldTable, BasicProperties, message::DeliveryResult};
 use tokio::runtime::Runtime;
 use tokio::time::{sleep, Duration};
+use tokio::time::{timeout};
+
+use dotenv::dotenv;
 use std::env;
 
 #[derive(Serialize, Deserialize)]
@@ -44,29 +47,41 @@ fn get_system_info() -> SystemInfo {
 }
 
 async fn send_to_rabbitmq(message: String) {
-    let addr = "amqp://SuperUser:SuperPassword@127.0.0.1:5672/%2f";
-    let conn = Connection::connect(&addr, ConnectionProperties::default()).await.expect("Failed to connect to RabbitMQ");
-    let channel = conn.create_channel().await.expect("Failed to create a channel");
-    let queue = "system_info_queue";
+    let addr = env::var("AMQP_ADDR").expect("Environment variable AMQP_ADDR must be set");
 
-    let _queue = channel.queue_declare(
-        queue,
-        QueueDeclareOptions::default(),
-        FieldTable::default(),
-    ).await.expect("Failed to declare a queue");
+    let timeout_duration = Duration::from_secs(10);
 
-    let confirm = channel.basic_publish(
-        "",
-        queue,
-        BasicPublishOptions::default(),
-        message.as_bytes(),
-        BasicProperties::default(),
-    ).await.expect("Failed to publish message");
+    match timeout(timeout_duration, Connection::connect(&addr, ConnectionProperties::default())).await {
+        Ok(Ok(conn)) => {
+            let channel = conn.create_channel().await.expect("Failed to create a channel");
+            let queue = "system_info_queue";
 
-    println!("Sent: {}", message);
+            let _queue = channel.queue_declare(
+                queue,
+                QueueDeclareOptions::default(),
+                FieldTable::default(),
+            ).await.expect("Failed to declare a queue");
+
+            let confirm = channel.basic_publish(
+                "",
+                queue,
+                BasicPublishOptions::default(),
+                message.as_bytes(),
+                BasicProperties::default(),
+            ).await.expect("Failed to publish message");
+
+            println!("Sent: {}", message);
+        }
+        Ok(Err(err)) => {
+            eprintln!("Failed to connect to RabbitMQ: {}", err);
+        }
+        Err(_) => {
+            eprintln!("Timed out while connecting to RabbitMQ");
+        }
+    }
 }
-
 fn main() {
+    dotenv().ok();
     let rt = Runtime::new().unwrap();
     rt.block_on(async {
         loop {

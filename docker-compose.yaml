@@ -16,21 +16,21 @@ services:
     networks:
       - default
 
-#  metric-miner:
-#    container_name: "metric-miner"
-#    command: [ "bash", "-c", "sleep 7", './SysMetricMiner']
-#    build:
-#      context: .
-#      dockerfile: Dockerfile
-#    image: metric-miner
-#    environment:
-#      AMQP_ADDR: ${AMQP_ADDR}
-#    depends_on:
-#      - rabbitmq
-#    networks:
-#      - default
-#    links:
-#      - rabbitmq
+  metric-miner:
+    container_name: "metric-miner"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: metric-miner
+    environment:
+      - AMQP_ADDR=${AMQP_ADDR}
+      - RUST_BACKTRACE=1
+    depends_on:
+      - rabbitmq
+    networks:
+      - default
+    links:
+      - rabbitmq
 
 
 volumes:
