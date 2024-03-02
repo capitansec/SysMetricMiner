@@ -1,0 +1,41 @@
+version: '3'
+
+services:
+  rabbitmq:
+    image: "rabbitmq:management"
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+
+    volumes:
+      - rabbitmq_sys_agent:/var/lib/rabbitmq
+    networks:
+      - default
+
+#  metric-miner:
+#    container_name: "metric-miner"
+#    command: [ "bash", "-c", "sleep 7", './SysMetricMiner']
+#    build:
+#      context: .
+#      dockerfile: Dockerfile
+#    image: metric-miner
+#    environment:
+#      AMQP_ADDR: ${AMQP_ADDR}
+#    depends_on:
+#      - rabbitmq
+#    networks:
+#      - default
+#    links:
+#      - rabbitmq
+
+
+volumes:
+  rabbitmq_sys_agent:
+
+networks:
+  default:
+    driver: bridge
