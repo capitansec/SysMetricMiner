@@ -11,21 +11,18 @@ use std::env;
 
 #[derive(Serialize, Deserialize)]
 struct SystemInfo {
-    cpu_usage_percent: f64,
+    total_cpu: f64,
+    used_cpu: f64,
     used_memory: u64,
     total_memory: u64,
     timestamp: u64,
 }
 
-fn calculate_average_cpu_usage(processors: &[Processor]) -> f64 {
-    let total_cpu_usage: f64 = processors.iter().map(|p| f64::from(p.get_cpu_usage())).sum();
-    let count = processors.len() as f64;
+fn calculate_cpu_amount(processors: &[Processor]) -> (f64, f64) {
+    let total_cpu: f64 = processors.iter().map(|p| f64::from(p.get_cpu_speed())).sum();
+    let used_cpu: f64 = processors.iter().map(|p| f64::from(p.get_cpu_usage())).sum();
 
-    if count > 0.0 {
-        total_cpu_usage / count
-    } else {
-        0.0
-    }
+    (total_cpu, used_cpu)
 }
 
 fn get_system_info() -> SystemInfo {
@@ -34,12 +31,12 @@ fn get_system_info() -> SystemInfo {
 
     let total_memory = system.get_total_memory();
     let used_memory = system.get_used_memory();
-    let cpu_usage = system.get_processors();
-
-    let cpu_usage_percent = calculate_average_cpu_usage(&cpu_usage);
+    let processors = system.get_processors();
+    let (total_cpu, used_cpu) = calculate_cpu_amount(&processors);
 
     SystemInfo {
-        cpu_usage_percent,
+        total_cpu,
+        used_cpu,
         used_memory,
         total_memory,
         timestamp: chrono::Utc::now().timestamp() as u64,
