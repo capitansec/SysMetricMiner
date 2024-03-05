@@ -1,11 +1,10 @@
-use sysinfo::{System, SystemExt, Processor, ProcessorExt};
+use sysinfo::{System, SystemExt, ProcessorExt};
 use serde::{Serialize, Deserialize};
 use serde_json::to_string;
 use lapin::{Connection, ConnectionProperties, options::*, types::FieldTable, BasicProperties, message::DeliveryResult};
 use tokio::runtime::Runtime;
 use tokio::time::{sleep, Duration};
-use tokio::time::{timeout};
-
+use tokio::time::timeout;
 use dotenv::dotenv;
 use std::env;
 
@@ -18,8 +17,8 @@ struct SystemInfo {
     timestamp: u64,
 }
 
-fn calculate_cpu_amount(processors: &[Processor]) -> (f64, f64) {
-    let total_cpu: f64 = processors.iter().map(|p| f64::from(p.get_cpu_speed())).sum();
+fn calculate_cpu_amount(processors: &[sysinfo::Processor]) -> (f64, f64) {
+    let total_cpu: f64 = processors.iter().map(|p| f64::from(p.get_frequency() as f64)).sum();
     let used_cpu: f64 = processors.iter().map(|p| f64::from(p.get_cpu_usage())).sum();
 
     (total_cpu, used_cpu)
@@ -63,7 +62,7 @@ async fn send_to_rabbitmq(message: String) {
                 "",
                 queue,
                 BasicPublishOptions::default(),
-                message.as_bytes(),
+                &message.as_bytes(),
                 BasicProperties::default(),
             ).await.expect("Failed to publish message");
 
@@ -77,6 +76,7 @@ async fn send_to_rabbitmq(message: String) {
         }
     }
 }
+
 fn main() {
     dotenv().ok();
     let rt = Runtime::new().unwrap();
